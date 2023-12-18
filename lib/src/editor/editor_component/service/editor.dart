@@ -29,6 +29,7 @@ class AppFlowyEditor extends StatefulWidget {
     this.shrinkWrap = false,
     this.showMagnifier = true,
     this.editorScrollController,
+    this.editorLockController,
     this.editorStyle = const EditorStyle.desktop(),
     this.header,
     this.footer,
@@ -44,6 +45,9 @@ class AppFlowyEditor extends StatefulWidget {
   final EditorState editorState;
 
   final EditorStyle editorStyle;
+
+  // for lock and unlock
+  final EditorLockController? editorLockController;
 
   /// Block component builders
   ///
@@ -161,8 +165,23 @@ class AppFlowyEditor extends StatefulWidget {
   State<AppFlowyEditor> createState() => _AppFlowyEditorState();
 }
 
+class EditorLockController {
+  ValueNotifier<bool> isLocked = ValueNotifier<bool>(false);
+
+  void lock() {
+    print("locked the editor");
+    isLocked.value = true;
+  }
+
+  void unlock() {
+    print("unlocked the editor");
+    isLocked.value = false;
+  }
+}
+
 class _AppFlowyEditorState extends State<AppFlowyEditor> {
   Widget? services;
+  bool _isLocked = false;
 
   EditorState get editorState => widget.editorState;
 
@@ -171,6 +190,11 @@ class _AppFlowyEditorState extends State<AppFlowyEditor> {
   @override
   void initState() {
     super.initState();
+    // attaching the lock controller
+    widget.editorLockController?.isLocked.addListener(_updateLockState);
+
+    print('initState called');
+    print('editorLockController: ${widget.editorLockController}');
 
     editorScrollController = widget.editorScrollController ??
         EditorScrollController(
@@ -191,6 +215,7 @@ class _AppFlowyEditorState extends State<AppFlowyEditor> {
   @override
   void dispose() {
     // dispose the scroll controller if it's created by the editor
+    widget.editorLockController?.isLocked.removeListener(_updateLockState);
     if (widget.editorScrollController == null) {
       editorScrollController.dispose();
     }
@@ -216,7 +241,9 @@ class _AppFlowyEditorState extends State<AppFlowyEditor> {
   Widget build(BuildContext context) {
     services ??= _buildServices(context);
 
-    if (!widget.editable) {
+    print("build method called");
+    if (!widget.editable || _isLocked) {
+      print("widget is not editable or is locked");
       return Provider.value(
         value: editorState,
         child: services!,
@@ -245,7 +272,8 @@ class _AppFlowyEditorState extends State<AppFlowyEditor> {
       footer: widget.footer,
     );
 
-    if (!widget.editable) {
+    if (!widget.editable || _isLocked) {
+      print("widget is not editable or is locked 2");
       return child;
     }
 
@@ -269,6 +297,13 @@ class _AppFlowyEditorState extends State<AppFlowyEditor> {
       editorScrollController: editorScrollController,
       child: child,
     );
+  }
+
+  void _updateLockState() {
+    setState(() {
+      _isLocked = widget.editorLockController?.isLocked.value ?? false;
+    });
+    print('value of isLocked is $_isLocked');
   }
 
   void _autoFocusIfNeeded() {
