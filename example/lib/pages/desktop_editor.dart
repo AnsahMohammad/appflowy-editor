@@ -20,6 +20,7 @@ class _DesktopEditorState extends State<DesktopEditor> {
   EditorState get editorState => widget.editorState;
 
   late final EditorScrollController editorScrollController;
+  final EditorLockController editorLockController = EditorLockController();
 
   late EditorStyle editorStyle;
   late Map<String, BlockComponentBuilder> blockComponentBuilders;
@@ -57,46 +58,69 @@ class _DesktopEditorState extends State<DesktopEditor> {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // editorLockController.lock();
+  }
+
+  @override
   Widget build(BuildContext context) {
     assert(PlatformExtension.isDesktopOrWeb);
-    return FloatingToolbar(
-      items: [
-        paragraphItem,
-        ...headingItems,
-        ...markdownFormatItems,
-        quoteItem,
-        bulletedListItem,
-        numberedListItem,
-        linkItem,
-        buildTextColorItem(),
-        buildHighlightColorItem(),
-        ...textDirectionItems,
-        ...alignmentItems,
-      ],
-      editorState: editorState,
-      textDirection: widget.textDirection,
-      editorScrollController: editorScrollController,
-      child: Directionality(
-        textDirection: widget.textDirection,
-        child: AppFlowyEditor(
-          editorState: editorState,
-          editorScrollController: editorScrollController,
-          blockComponentBuilders: blockComponentBuilders,
-          commandShortcutEvents: commandShortcuts,
-          editorStyle: editorStyle,
-          header: Padding(
-            padding: const EdgeInsets.only(bottom: 10.0),
-            child: Image.asset(
-              'assets/images/header.png',
-              fit: BoxFit.fitWidth,
-              height: 150,
+    return Column(
+      children: [
+        ElevatedButton(
+          onPressed: () {
+            if (editorLockController.isLocked.value) {
+              editorLockController.unlock();
+            } else {
+              editorLockController.lock();
+            }
+          },
+          child: Text('Toggle Lock'),
+        ),
+        Expanded(
+          child: FloatingToolbar(
+            items: [
+              paragraphItem,
+              ...headingItems,
+              ...markdownFormatItems,
+              quoteItem,
+              bulletedListItem,
+              numberedListItem,
+              linkItem,
+              buildTextColorItem(),
+              buildHighlightColorItem(),
+              ...textDirectionItems,
+              ...alignmentItems,
+            ],
+            editorState: editorState,
+            textDirection: widget.textDirection,
+            editorScrollController: editorScrollController,
+            child: Directionality(
+              textDirection: widget.textDirection,
+              child: AppFlowyEditor(
+                editorState: editorState,
+                editorScrollController: editorScrollController,
+                editorLockController: editorLockController,
+                blockComponentBuilders: blockComponentBuilders,
+                commandShortcutEvents: commandShortcuts,
+                editorStyle: editorStyle,
+                header: Padding(
+                  padding: const EdgeInsets.only(bottom: 10.0),
+                  child: Image.asset(
+                    'assets/images/header.png',
+                    fit: BoxFit.fitWidth,
+                    height: 150,
+                  ),
+                ),
+                footer: const SizedBox(
+                  height: 100,
+                ),
+              ),
             ),
           ),
-          footer: const SizedBox(
-            height: 100,
-          ),
         ),
-      ),
+      ],
     );
   }
 
